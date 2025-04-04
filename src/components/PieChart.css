@@ -1,0 +1,30 @@
+.pie-chart-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.pie-chart {
+    width: 150px; /* Adjust size as needed */
+    height: 150px;
+    border-radius: 50%;
+    border: 1px solid #ccc;
+    /* background is set inline via style prop */
+}
+
+.legend .legend-color {
+    display: inline-block;
+    width: 15px;
+    height: 15px;
+    margin-right: 5px;
+    vertical-align: middle;
+    border: 1px solid #ddd;
+}
+
+.legend .available {
+    background-color: #28a745; /* Match Bootstrap success */
+}
+
+.legend .unavailable {
+    background-color: #dc3545; /* Match Bootstrap danger */
+}
