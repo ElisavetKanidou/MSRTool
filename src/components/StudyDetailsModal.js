@@ -4,9 +4,13 @@ import { Modal, Button, ListGroup, Badge } from 'react-bootstrap';
 function StudyDetailsModal({ show, onHide, study }) {
     if (!study) return null;
 
+    // Helper function για να σπάει κείμενο με '#' και να φτιάχνει λίστα
     const renderListItems = (itemsString, title) => {
-        if (!itemsString) return null;
-        const items = itemsString.split('#').map(item => item.trim()).filter(Boolean);
+        // Optional chaining για ασφάλεια αν το string είναι null/undefined
+        const items = itemsString?.split('#').map(item => item.trim()).filter(Boolean);
+
+        if (!items || items.length === 0) return null; // Έλεγχος αν η λίστα είναι κενή
+
         return (
             <>
                 <strong>{title}:</strong>
@@ -19,28 +23,64 @@ function StudyDetailsModal({ show, onHide, study }) {
         );
     }
 
+     // Helper function για να εμφανίζει απλό κείμενο (π.χ. Abstract)
+     const renderTextField = (text, title) => {
+        if (!text) return null;
+        return (
+            <>
+                <strong>{title}:</strong>
+                <p>{text}</p>
+            </>
+        );
+     }
+
+
     return (
         <Modal show={show} onHide={onHide} size="lg" centered>
             <Modal.Header closeButton>
-                <Modal.Title>{study.paper_title}</Modal.Title>
+                {/* ===> ΑΛΛΑΓΗ ΕΔΩ <=== */}
+                <Modal.Title>{study?.title || 'Λεπτομέρειες Μελέτης'}</Modal.Title>
             </Modal.Header>
             <Modal.Body>
-                <p><strong>Συγγραφείς:</strong> {study.paper_author || 'N/A'}</p>
-                <p><strong>Έτος:</strong> {study.paper_year || 'N/A'} | <strong>Τόπος:</strong> {study.paper_venue || 'N/A'} | <strong>Τύπος:</strong> {study.paper_type || 'N/A'}</p>
+                 {/* ===> ΑΛΛΑΓΗ ΕΔΩ <=== */}
+                <p><strong>Συγγραφείς:</strong> {study?.authors || 'N/A'}</p>
+                <p>
+                    {/* ===> ΑΛΛΑΓΗ ΕΔΩ <=== */}
+                    <strong>Έτος:</strong> {study?.year || 'N/A'} |
+                    <strong>Τόπος:</strong> {study?.venue || 'N/A'}
+                    {/* Το paper_type δεν υπάρχει πια ως ξεχωριστό πεδίο, περιέχεται στα notes */}
+                </p>
 
-                {renderListItems(study.paper_project, 'Έργα')}
-                {renderListItems(study.paper_criteria, 'Κριτήρια Επιλογής')}
-                {renderListItems(study.paper_goals, 'Στόχοι Μελέτης')}
+                 {/* ===> ΑΛΛΑΓΗ ΕΔΩ ΚΑΙ ΧΡΗΣΗ ΝΕΩΝ ΠΕΔΙΩΝ <=== */}
+                {/* Το paper_project έγινε source */}
+                {renderListItems(study?.source, 'Πηγές/Έργα')}
+                {/* Το paper_criteria έγινε inclusion_criteria */}
+                {renderListItems(study?.inclusion_criteria, 'Κριτήρια Επιλογής')}
+                {/* Το paper_goals έγινε abstract και δεν χρειάζεται split */}
+                {renderTextField(study?.abstract, 'Περίληψη/Στόχοι')}
 
-                {study.paper_link ? (
+                 {/* ===> ΑΛΛΑΓΗ ΕΔΩ ΚΑΙ ΧΡΗΣΗ ΝΕΟΥ ΠΕΔΙΟΥ <=== */}
+                 {/* Εμφάνιση του πεδίου Notes */}
+                 {renderTextField(study?.notes, 'Σημειώσεις')}
+
+                {/* Το paper_link έγινε url */}
+                {/* Η λογική για το data_available αφαιρέθηκε, αφού δεν έρχεται ως boolean */}
+                {study?.url ? (
                     <p>
                        <strong>Σύνδεσμος:</strong>{' '}
-                       <a href={study.paper_link} target="_blank" rel="noopener noreferrer">{study.paper_link}</a>
-                       {' '} <Badge bg={study.data_available ? "success" : "warning"}>{study.data_available ? "Δεδομένα Διαθέσιμα" : "Link Παρέχεται"}</Badge>
+                       <a href={study.url} target="_blank" rel="noopener noreferrer">{study.url}</a>
                     </p>
                 ) : (
-                     <p><Badge bg="danger">Δεδομένα Μη Διαθέσιμα</Badge></p>
+                    <p><Badge bg="secondary">Σύνδεσμος μη διαθέσιμος</Badge></p>
                 )}
+
+                {/* Προαιρετικά: Εμφάνιση Keywords και DOI αν υπάρχουν */}
+                 {study?.keywords && <p><strong>Λέξεις Κλειδιά:</strong> {study.keywords}</p> }
+                 {study?.doi && <p><strong>DOI:</strong> {study.doi}</p> }
+                 {/* Προαιρετικά: Εμφάνιση status, quality_score αν υπάρχουν */}
+                 {study?.status && <p><strong>Status:</strong> <Badge bg="info">{study.status}</Badge></p> }
+                 {study?.quality_score !== null && typeof study?.quality_score !== 'undefined' && <p><strong>Quality Score:</strong> {study.quality_score}</p> }
+
 
             </Modal.Body>
             <Modal.Footer>

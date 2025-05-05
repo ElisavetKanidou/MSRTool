@@ -1,117 +1,125 @@
-import React, { useMemo } from 'react';
-import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, Title } from 'chart.js';
-import { Pie, Bar } from 'react-chartjs-2';
-import PieChart from './PieChart'; // Import the custom PieChart component
+// src/components/StatsView.js
+import React from 'react';
+import { Modal, Button, Spinner, Alert } from 'react-bootstrap';
+import { Bar } from 'react-chartjs-2'; // <-- Import Bar chart
+import {
+    Chart as ChartJS,
+    CategoryScale,
+    LinearScale,
+    BarElement,
+    Title,
+    Tooltip,
+    Legend,
+} from 'chart.js'; // <-- Import απαραίτητων modules του Chart.js
 
-ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, Title);
+// --- ΕΓΓΡΑΦΗ ΤΩΝ MODULES (ΑΠΑΡΑΙΤΗΤΟ!) ---
+ChartJS.register(
+    CategoryScale,
+    LinearScale,
+    BarElement,
+    Title,
+    Tooltip,
+    Legend
+);
+// ----------------------------------------
 
-// Helper function to count frequencies of items separated by '#'
-const countFrequencies = (studies, field) => {
-    const counts = {};
-    studies.forEach(study => {
-        if (study[field]) {
-            const items = study[field].split('#').map(item => item.trim().toLowerCase()).filter(Boolean);
-            items.forEach(item => {
-                counts[item] = (counts[item] || 0) + 1;
-            });
-        }
-    });
-    // Sort by frequency descending and take top N (e.g., top 10)
-    return Object.entries(counts)
-                 .sort(([,a], [,b]) => b - a)
-                 .slice(0, 10); // Adjust N as needed
-};
+function StatsView({ show, onHide, title, data, isLoading, error }) {
 
-
-function StatsView({ statsType, studies, totalStudiesCount, availableDataCount, onBack }) {
-
-    const chartData = useMemo(() => {
-        if (!studies || studies.length === 0) return null;
-
-        let labels = [];
-        let dataPoints = [];
-        let chartTitle = '';
-
-        switch (statsType) {
-            case 'projects':
-            case 'goals':
-            case 'criteria':
-                const fieldMap = { projects: 'paper_project', goals: 'paper_goals', criteria: 'paper_criteria' };
-                const titleMap = { projects: 'Top Έργα', goals: 'Top Στόχοι', criteria: 'Top Κριτήρια' };
-                const frequencies = countFrequencies(studies, fieldMap[statsType]);
-                labels = frequencies.map(entry => entry[0]);
-                dataPoints = frequencies.map(entry => entry[1]);
-                chartTitle = titleMap[statsType];
-                return {
-                    type: 'bar',
-                    title: chartTitle,
-                    data: {
-                        labels,
-                        datasets: [{
-                            label: 'Αριθμός Μελετών',
-                            data: dataPoints,
-                            backgroundColor: 'rgba(54, 162, 235, 0.6)',
-                            borderColor: 'rgba(54, 162, 235, 1)',
-                            borderWidth: 1
-                        }]
-                    },
-                    options: {
-                         indexAxis: 'y', // Make it horizontal bar chart for better readability
-                         responsive: true,
-                         plugins: {
-                            legend: { display: false },
-                            title: { display: true, text: chartTitle }
-                         },
-                         scales: {
-                            x: { beginAtZero: true }
-                         }
-                    }
-                };
-
-             case 'dataAvailability':
-                // Use the custom PieChart component for this specific chart
-                return { type: 'customPie' };
-
-
-            default:
-                return null;
-        }
-    }, [statsType, studies, totalStudiesCount, availableDataCount]);
-
-
-     const renderChart = () => {
-        if (!chartData) return <p>Δεν υπάρχουν δεδομένα για εμφάνιση στατιστικών.</p>;
-
-        if (chartData.type === 'customPie') {
-             return (
-                 <>
-                     <h5>Διαθεσιμότητα Δεδομένων (Βάσει {totalStudiesCount} Μελετών)</h5>
-                     <PieChart
-                         available={availableDataCount}
-                         unavailable={totalStudiesCount - availableDataCount}
-                     />
-                 </>
-             );
-        } else if (chartData.type === 'bar') {
-             return <Bar options={chartData.options} data={chartData.data} />;
-        }
-        // Add other chart types if needed
-        return <p>Άγνωστος τύπος γραφήματος.</p>;
+    // --- Προετοιμασία δεδομένων για το Chart.js ---
+    const chartData = {
+        labels: data?.map(item => item.name) || [], // Τα ονόματα στον άξονα Υ
+        datasets: [
+            {
+                label: 'Πλήθος', // Ετικέτα για το dataset
+                data: data?.map(item => item.count) || [], // Οι τιμές (counts)
+                backgroundColor: 'rgba(54, 162, 235, 0.6)', // Χρώμα μπάρας (γαλάζιο με διαφάνεια)
+                borderColor: 'rgba(54, 162, 235, 1)',     // Χρώμα περιγράμματος
+                borderWidth: 1,
+            },
+        ],
     };
 
+    // --- Ρυθμίσεις εμφάνισης του Chart.js ---
+    const chartOptions = {
+        indexAxis: 'y', // <-- Κάνει το διάγραμμα οριζόντιο (μπάρες αριστερά-δεξιά)
+        elements: {
+            bar: {
+                borderWidth: 2, // Πάχος γραμμής περιγράμματος
+            },
+        },
+        responsive: true, // Το διάγραμμα προσαρμόζεται στο μέγεθος του container
+        maintainAspectRatio: false, // Επιτρέπει να ορίσουμε ύψος ανεξάρτητα
+        plugins: {
+            legend: {
+                position: 'top', // Θέση του legend
+                display: false, // Ας κρύψουμε το legend αφού έχουμε μία μπάρα
+            },
+            title: {
+                display: false, // Ο τίτλος είναι ήδη στο Modal Header
+                // text: title || 'Στατιστικά',
+            },
+            tooltip: { // Ρυθμίσεις για το τι φαίνεται στο hover
+                callbacks: {
+                    label: function(context) {
+                        let label = context.dataset.label || '';
+                        if (label) {
+                            label += ': ';
+                        }
+                        if (context.parsed.x !== null) {
+                            label += context.parsed.x; // Δείξε την τιμή count
+                        }
+                        return label;
+                    }
+                }
+            }
+        },
+        scales: { // Ρυθμίσεις για τους άξονες
+            x: { // Ο οριζόντιος άξονας (με τις τιμές)
+                beginAtZero: true, // Να ξεκινάει από το 0
+                 title: {
+                    display: true,
+                    text: 'Πλήθος Εμφανίσεων'
+                 }
+            },
+            y: { // Ο κάθετος άξονας (με τα labels)
+                ticks: {
+                     autoSkip: false // Να μην παραλείπει labels αν είναι πολλά
+                 }
+            }
+        },
+    };
+    // --------------------------------------------
 
     return (
-        <section id="stats-view" className="card p-4 shadow-sm">
-            <div className="d-flex justify-content-between align-items-center mb-3">
-                <h4 id="stats-title">{chartData?.title || 'Στατιστικά Στοιχεία'}</h4>
-                <button onClick={onBack} className="btn btn-secondary">
-                    <i className="fas fa-arrow-left me-1"></i> Πίσω στη Λίστα
-                </button>
-            </div>
-            <div id="stats-content" style={{ minHeight: '300px' }}>
-               {renderChart()}
-            </div>
-        </section>
+        // Κάνουμε το modal λίγο μεγαλύτερο για να χωράει το γράφημα
+        <Modal show={show} onHide={onHide} centered size="xl">
+            <Modal.Header closeButton>
+                <Modal.Title>{title || 'Στατιστικά'}</Modal.Title>
+            </Modal.Header>
+            <Modal.Body style={{ minHeight: '400px' }}> {/* Δίνουμε ένα ελάχιστο ύψος */}
+                {isLoading ? (
+                    <div className="text-center">
+                        <Spinner animation="border" role="status">
+                            <span className="visually-hidden">Loading...</span>
+                        </Spinner>
+                    </div>
+                ) : error ? (
+                    <Alert variant="danger">Σφάλμα: {error}</Alert>
+                ) : data && data.length > 0 ? (
+                    // Container για το γράφημα με καθορισμένο ύψος
+                    <div style={{ position: 'relative', height: `${Math.max(300, data.length * 30)}px` }}> {/* Δυναμικό ύψος */}
+                        <Bar options={chartOptions} data={chartData} />
+                    </div>
+                ) : (
+                    <p>Δεν βρέθηκαν δεδομένα.</p>
+                )}
+            </Modal.Body>
+            <Modal.Footer>
+                <Button variant="secondary" onClick={onHide}>
+                    Κλείσιμο
+                </Button>
+            </Modal.Footer>
+        </Modal>
     );
 }
 

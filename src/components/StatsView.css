@@ -1,0 +1,36 @@
+/* src/components/StatsView.css */
+.stats-bar-chart .bar-item {
+    display: flex;
+    align-items: center;
+    gap: 10px; /* Κενό μεταξύ label και μπάρας */
+}
+
+.stats-bar-chart .bar-label {
+    flex-shrink: 0; /* Να μην μικραίνει το label */
+    width: 200px; /* Προσαρμόστε αν χρειάζεται */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis; /* Εμφάνιση ... αν το όνομα είναι μεγάλο */
+    font-size: 0.9em;
+}
+
+.stats-bar-chart .bar-container {
+    flex-grow: 1; /* Η μπάρα να πιάνει τον υπόλοιπο χώρο */
+    background-color: #e9ecef; /* Χρώμα φόντου μπάρας */
+    border-radius: 4px;
+    height: 20px; /* Ύψος μπάρας */
+    overflow: hidden; /* Για το border-radius */
+}
+
+.stats-bar-chart .bar {
+    height: 100%;
+    background-color: #0d6efd; /* Χρώμα μπάρας (π.χ., bootstrap primary) */
+    border-radius: 4px;
+    transition: width 0.3s ease-in-out; /* Ομαλή κίνηση */
+    white-space: nowrap; /* Αποτρέπει το κείμενο από το να σπάσει */
+    overflow: hidden;
+    text-indent: 5px; /* Μικρό κενό στην αρχή της μπάρας */
+    color: white;
+    font-size: 0.8em;
+    line-height: 20px; /* Κεντράρισμα κειμένου κάθετα */
+}
